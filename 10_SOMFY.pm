@@ -193,8 +193,11 @@ sub SOMFY_Set($@) {
 		return "no set value specified" ;
 	}
 
+  # -for-timer commands require a correctly formatted time spec
   return SOMFY_Do_For_Timer($hash, $name, @args) if($args[0] =~ m/[on|off]-for-timer$/);
-  return "Bad time spec" if($numberOfArgs == 2 && $args[1] !~ m/^\d*\.?\d+$/);
+  return "Bad time spec" if($numberOfArgs == 2
+  	&& $args[0] =~ m/[on|off]-for-timer$/
+  	&& $args[1] !~ m/^\d*\.?\d+$/);
 
     my $command = $somfy_c2b{ $args[0] };
 	if ( !defined($command) ) {
