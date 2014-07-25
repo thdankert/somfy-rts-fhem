@@ -20,7 +20,7 @@ my %codes = (
 	"11" => "stop", 	# stop the current movement
 	"20" => "off",      # go "up"
 	"40" => "on",       # go "down"
-	"80" => "prog",     # enter programming mode
+	"80" => "prog",     # finish pairing
 	"100" => "on-for-timer",
 	"101" => "off-for-timer",
 );
