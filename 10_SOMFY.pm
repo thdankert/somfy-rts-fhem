@@ -23,6 +23,7 @@ my %codes = (
 	"80" => "prog",     # finish pairing
 	"100" => "on-for-timer",
 	"101" => "off-for-timer",
+	"XX" => "z_custom",	# custom control code
 );
 
 my %somfy_c2b;
@@ -199,6 +200,12 @@ sub SOMFY_Set($@) {
   	&& $args[0] =~ m/[on|off]-for-timer$/
   	&& $args[1] !~ m/^\d*\.?\d+$/);
 
+  # custom control needs 2 digit hex code
+  return "Bad custom control code, use 2 digit hex codes only" if($args[0] eq "z_custom"
+  	&& ($numberOfArgs == 1
+  		|| ($numberOfArgs == 2
+  			&& $args[1] !~ m/^[a-fA-F0-9]{2}$/)));
+
     my $command = $somfy_c2b{ $args[0] };
 	if ( !defined($command) ) {
 
@@ -260,6 +267,11 @@ sub SOMFY_Set($@) {
 
 	my $enckey = uc(ReadingsVal($name, "enc_key", "A0"));
 	my $rollingcode = uc(ReadingsVal($name, "rolling_code", "0000"));
+
+	if($command eq "XX") {
+		# use user-supplied custom command
+		$command = $args[1];
+	}
 
 	$message = "Ys"
 	  . $enckey
