@@ -21,9 +21,8 @@ The blind will move up and down shortly to indicate completion.
 You are now able to control this blind from FHEM, the receiver thinks it is just another remote control.
 
 ##### Parameters
-* `address` is a 6 digit hex number that uniquely identifies FHEM as a new remote control channel.
-
-	You should use a different one for each device definition, and group them using a structure.
+* `address` is a 6 digit hex number that uniquely identifies FHEM as a new remote control channel. 
+Each device definition should have its own address, the can be grouped using a structure.
 
 * `encryption-key` (optional) is a 2 digit hex number (first letter should always be A) that can be set to clone an existing remote control channel.
 
