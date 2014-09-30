@@ -1,5 +1,5 @@
 ######################################################
-# $Id: 10_SOMFY.pm 6196 2014-07-04 15:30:58Z thomyd $
+# $Id: 10_SOMFY.pm 6634 2014-09-30 13:56:19Z thomyd $
 #
 # SOMFY RTS / Simu Hz protocol module for FHEM
 # (c) Thomas Dankert <post@thomyd.de>
@@ -48,6 +48,7 @@ my %sets = (
 	"on" => "",
 	"stop" => "",
 	"go-my" => "",
+	"prog" => "",
 	"on-for-timer" => "textField",
 	"off-for-timer" => "textField",
 	"z_custom" => "textField",
