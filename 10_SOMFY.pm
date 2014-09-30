@@ -23,6 +23,7 @@
 #							associated with the blind
 #
 #	1.3		thomyd			Basic implementation of "parse" function, requires updated CULFW
+#							Removed open/close as the same functionality can be achieved with an eventMap.
 
 ######################################################
 
@@ -44,9 +45,7 @@ my %codes = (
 
 my %sets = (
 	"off" => "",
-	"open" => "",
 	"on" => "",
-	"close" => "",
 	"stop" => "",
 	"go-my" => "",
 	"on-for-timer" => "textField",
@@ -404,10 +403,10 @@ sub SOMFY_CalcNewPos($) {
 	# update state
 	my $value;
 	if($newpos == 0) {
-		$value = 'open';
+		$value = 'off';
 
 	} elsif($newpos > 100) {
-		$value = 'close';
+		$value = 'on';
 
 	} else {
 		$value = 'pos '.SOMFY_Runden($newpos); # for using icons in state
@@ -456,13 +455,13 @@ sub SOMFY_Set($@) {
 
 	return "Bad time spec" if($cmd =~m/(on|off)-for-timer/ && $numberOfArgs == 2 && $args[1] !~ m/^\d*\.?\d+$/);
 
-	if(($cmd =~m/open|off/) || ($cmd eq 'pos' &&  $args[1] == 0)) {
+	if(($cmd =~m/off/) || ($cmd eq 'pos' &&  $args[1] == 0)) {
 		$cmd = 'off';
 		$hash->{move} = 'up';
 		$newpos = 0;
 		$updatetime = (AttrVal($name,'drive-up-time-open',25) - AttrVal($name,'drive-up-time-100',0)) * $oldpos / 100;
 
-	} elsif ($cmd =~m/close|on/) {
+	} elsif ($cmd =~m/on/) {
 		$cmd = 'on';
 		$hash->{move} = 'down';
 
@@ -715,8 +714,8 @@ sub SOMFY_Attr(@) {
     <br><br>
     where <code>value</code> is one of:<br>
     <pre>
-    on or close
-    off or open
+    on
+    off
     go-my
     stop
     pos value (0..100) # see note
@@ -730,7 +729,6 @@ sub SOMFY_Attr(@) {
       <code>set rollo_1,rollo_2,rollo_3 on</code><br>
       <code>set rollo_1-rollo_3 on</code><br>
       <code>set rollo_1 off</code><br>
-      <code>set rollo_1 open</code><br>
       <code>set rollo_1 pos 50</code><br>
     </ul>
     <br>
