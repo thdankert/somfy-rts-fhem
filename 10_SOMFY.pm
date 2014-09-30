@@ -499,7 +499,7 @@ sub SOMFY_Set($@) {
 		$newpos = 100;
 		$hash->{move} = 'stop';
 		$hash->{READINGS}{position}{VAL} = 100;
-		Log3($name,1,"SOMFY_set: go-my/stop not correct implemented for correct positioning! Use set device pos <value> instead");
+		Log3($name,1,"SOMFY_set: Warning: go-my/stop will mess up correct positioning! Please use pos <value> instead.");
 
 	} elsif($cmd eq 'on-for-timer') {
 		$cmd = 'on';
