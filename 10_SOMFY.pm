@@ -483,13 +483,13 @@ sub SOMFY_Set($@) {
 		. "drive-up-time-to-100 and drive-up-time-to-open before using the pos <value> extension" if(!defined($t1down) || !defined($t1upopen) || !defined($t1up100));
 
 		if($newpos > $oldpos) { # down
-			$hash->{move} = 'down';
 			$cmd = 'on';
+			$hash->{move} = 'down';
 			$drivetime = ($t1down * ($newpos -  $oldpos) / 100);
 
 		} else { # up
-			$hash->{move} = 'up';
 			$cmd = 'off';
+			$hash->{move} = 'up';
 			my $t1 = $t1upopen - $t1up100;
 			$drivetime = ($t1 * ($oldpos -  $newpos) / 100);
 		}
@@ -512,8 +512,8 @@ sub SOMFY_Set($@) {
 			$updatetime = $tmax;
 		}
 	} elsif($cmd eq 'off-for-timer') {
-		$hash->{move} = 'up';
 		$cmd = 'off';
+		$hash->{move} = 'up';
 		$drivetime = $args[1];
 		my $topen = AttrVal($name,'drive-up-time-to-open',25);
 		my $t100 = AttrVal($name,'drive-up-time-to-100',0);
