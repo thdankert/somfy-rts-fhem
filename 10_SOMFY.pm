@@ -544,6 +544,7 @@ sub SOMFY_Set($@) {
 	if($drivetime > 0) {
 		# timer fuer stop starten
 		RemoveInternalTimer($hash);
+		Log3($name,3,"SOMFY_set: $name -> stopping in $drivetime sec");
 		InternalTimer(gettimeofday()+$drivetime,"SOMFY_SendStop",$hash,0);
 
 	} elsif($updatetime > 0) {
