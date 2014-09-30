@@ -504,9 +504,10 @@ sub SOMFY_Set($@) {
 		$cmd = 'on';
 		$hash->{move} = 'down';
 		$drivetime = $args[1];
-		my $tmax = ($oldpos / 100) * AttrVal($name,'drive-down-time-to-close',25) ;
+		my $tclose = AttrVal($name,'drive-down-time-to-close',25);
+		my $tmax = ($oldpos / 100) * $tclose;
 
-		if(($tmax + $drivetime)> AttrVal($name,'drive-down-time-to-close',25)) { # limit ?
+		if(($tmax + $drivetime) > $tclose) { # limit ?
 			$drivetime = 0;
 			$updatetime = $tmax;
 		}
@@ -518,7 +519,7 @@ sub SOMFY_Set($@) {
 		my $t100 = AttrVal($name,'drive-up-time-to-100',0);
 		my $tpos =  $topen * ($topen / ($topen - $t100)) - ($oldpos / 100);
 
-		if(($tpos +$drivetime) > $topen) { # limit ?
+		if(($tpos + $drivetime) > $topen) { # limit ?
 			$drivetime  = 0;
 			$updatetime = $tpos;
 		}
@@ -535,7 +536,7 @@ sub SOMFY_Set($@) {
 			}
 		} # end foreach
 
-	return "Unknown argument $cmd, choose one of " . join(" ", @cList);
+		return "Unknown argument $cmd, choose one of " . join(" ", @cList);
 	} # error and ? handling
 
 	$args[0] = $cmd;
