@@ -10,7 +10,7 @@
 # Published under GNU GPL License, v2
 #
 # History:
-#	1.0		thdankert		initial implementation
+#	1.0		thomyd			initial implementation
 #
 #	1.1		Elektrolurch	state changed to open,close,pos <x>
 # 							for using "set device pos <value> the attributes
@@ -22,7 +22,7 @@
 #							preparation for receiving signals of Somfy remotes signals,
 #							associated with the blind
 #
-#	1.3		thdankert		Basic implementation of "parse" function, requires updated CULFW
+#	1.3		thomyd			Basic implementation of "parse" function, requires updated CULFW
 
 ######################################################
 
