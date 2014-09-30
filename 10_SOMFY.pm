@@ -246,8 +246,8 @@ sub SOMFY_SendCommand($@)
 	if (   defined( $attr{ $name } )
 		&& defined( $attr{ $name }{"symbol-length"} ) )
 	{
-		$message = $attr{ $name }{"symbol-length"};
-		IOWrite( $hash, "Yt", $message );
+		$message = "t" . $attr{ $name }{"symbol-length"};
+		IOWrite( $hash, "Y", $message );
 		Log GetLogLevel( $name, 4 ),
 		  "SOMFY set symbol-length: $message for $io->{NAME}";
 	}
@@ -257,8 +257,8 @@ sub SOMFY_SendCommand($@)
 	if (   defined( $attr{ $name } )
 		&& defined( $attr{ $name }{"repetition"} ) )
 	{
-		$message = $attr{ $name }{"repetition"};
-		IOWrite( $hash, "Yr", $message );
+		$message = "r" . $attr{ $name }{"repetition"};
+		IOWrite( $hash, "Y", $message );
 		Log GetLogLevel( $name, 4 ),
 		  "SOMFY set repetition: $message for $io->{NAME}";
 	}
@@ -288,7 +288,7 @@ sub SOMFY_SendCommand($@)
 		$command = $args[1];
 	}
 
-	$message = "Ys"
+	$message = "s"
 	  . $enckey
 	  . $command
 	  . $rollingcode
@@ -299,7 +299,7 @@ sub SOMFY_SendCommand($@)
 	( undef, $value ) = split( " ", $value, 2 );    # Not interested in the name...
 
 	## Send Message to IODev using IOWrite
-	IOWrite( $hash, "Ys", $message );
+	IOWrite( $hash, "Y", $message );
 
 	# increment encryption key and rolling code
 	my $enc_key_increment      = hex( $enckey );
@@ -316,8 +316,8 @@ sub SOMFY_SendCommand($@)
 	if (   defined( $attr{ $name } )
 		&& defined( $attr{ $name }{"symbol-length"} ) )
 	{
-		$message = $somfy_defsymbolwidth;
-		IOWrite( $hash, "Yt", $message );
+		$message = "t" . $somfy_defsymbolwidth;
+		IOWrite( $hash, "Y", $message );
 		Log GetLogLevel( $name, 4 ),
 		  "SOMFY set symbol-length back: $message for $io->{NAME}";
 	}
@@ -326,8 +326,8 @@ sub SOMFY_SendCommand($@)
 	if (   defined( $attr{ $name } )
 		&& defined( $attr{ $name }{"repetition"} ) )
 	{
-		$message = $somfy_defrepetition;
-		IOWrite( $hash, "Yr", $message );
+		$message = "r" . $somfy_defrepetition;
+		IOWrite( $hash, "Y", $message );
 		Log GetLogLevel( $name, 4 ),
 		  "SOMFY set repetition back: $message for $io->{NAME}";
 	}
