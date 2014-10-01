@@ -465,14 +465,13 @@ sub SOMFY_Set($@) {
 
 	return "Bad time spec" if($cmd =~m/(on|off)-for-timer/ && $numberOfArgs == 2 && $args[1] !~ m/^\d*\.?\d+$/);
 
-	if(($cmd =~m/off/) || ($cmd eq 'pos' &&  $args[1] == 0)) {
+	if(($cmd eq 'off') || ($cmd eq 'pos' &&  $args[1] == 0)) {
 		$cmd = 'off';
 		$hash->{move} = 'up';
 		$newpos = 0;
 		$updatetime = (AttrVal($name,'drive-up-time-open',25) - AttrVal($name,'drive-up-time-100',0)) * $oldpos / 100;
 
-	} elsif ($cmd =~m/on/) {
-		$cmd = 'on';
+	} elsif ($cmd eq 'on') {
 		$hash->{move} = 'down';
 
 		my $t1 = AttrVal($name,'drive-down-time-to-100',100);
