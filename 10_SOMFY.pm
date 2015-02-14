@@ -388,7 +388,7 @@ sub SOMFY_CalcNewPos($) {
 			if($oldpos > 100) {
 				$dt = $dt - $t1up100;
 				$newpos = $oldpos - (100 * $dt / ($t1upopen - $t1up100));
-				$newpos = 100 if($newpos > 100), # driven only short between close and pos 100!
+				$newpos = 100 if($newpos > 100); # driven only short between close and pos 100!
 
 			} else {
 				$newpos = $oldpos - (100 * $dt / ($t1upopen - $t1up100));
