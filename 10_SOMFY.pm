@@ -1,5 +1,5 @@
 ######################################################
-# $Id: 10_SOMFY.pm 6635 2014-09-30 14:03:46Z thomyd $
+# $Id: 10_SOMFY.pm 6645 2014-10-01 07:55:26Z thomyd $
 #
 # SOMFY RTS / Simu Hz protocol module for FHEM
 # (c) Thomas Dankert <post@thomyd.de>
