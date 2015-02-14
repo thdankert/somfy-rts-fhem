@@ -4,8 +4,7 @@
 # SOMFY RTS / Simu Hz protocol module for FHEM
 # (c) Thomas Dankert <post@thomyd.de>
 #
-# This will only work if you flashed your CUL with
-# the newest culfw (support for "Y" command).
+# Needs CULFW V 1.59 or higher (support for "Y" command).
 #
 # Published under GNU GPL License, v2
 #
@@ -27,6 +26,8 @@
 #
 #	1.4 	thomyd			Implemented fallback on/off-for-timer methods and only show warning about stop/go-my
 #							if the positioning attributes are set.
+#
+#	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 
 ######################################################
 
