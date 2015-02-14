@@ -469,7 +469,7 @@ sub SOMFY_Set($@) {
 		$cmd = 'off';
 		$hash->{move} = 'up';
 		$newpos = 0;
-		$updatetime = (AttrVal($name,'drive-up-time-open',25) - AttrVal($name,'drive-up-time-100',0)) * $oldpos / 100;
+		$updatetime = (AttrVal($name,'drive-up-time-to-open',25) - AttrVal($name,'drive-up-time-to-100',0)) * $oldpos / 100;
 
 	} elsif ($cmd eq 'on') {
 		$hash->{move} = 'down';
