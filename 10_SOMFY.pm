@@ -11,25 +11,25 @@
 # History:
 #	1.0		thomyd			initial implementation
 #
-#	1.1		Elektrolurch	state changed to open,close,pos <x>
+#	1.1		Elektrolurch		state changed to open,close,pos <x>
 # 							for using "set device pos <value> the attributes
 #							drive-down-time-to-100, drive-down-time-to-close,
 #							drive-up-time-to-100 and drive-up-time-to-open must be set
 # 							Hardware section seperated to SOMFY_SetCommand
 #
-#	1.2		Elektrolurch	state is now set after reaching the position of the blind
+#	1.2		Elektrolurch		state is now set after reaching the position of the blind
 #							preparation for receiving signals of Somfy remotes signals,
 #							associated with the blind
 #
 #	1.3		thomyd			Basic implementation of "parse" function, requires updated CULFW
 #							Removed open/close as the same functionality can be achieved with an eventMap.
 #
-#	1.4 	thomyd			Implemented fallback on/off-for-timer methods and only show warning about stop/go-my
+#	1.4 		thomyd			Implemented fallback on/off-for-timer methods and only show warning about stop/go-my
 #							if the positioning attributes are set.
 #
 #	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 #
-#	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#	1.6		viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
 #
 
 ### test paths ???? not yet finished
