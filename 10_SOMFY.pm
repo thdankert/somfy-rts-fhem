@@ -565,6 +565,16 @@ sub SOMFY_InternalSet($@) {
 
 	my $cmd = lc($args[0]);
 
+	# just a number provided, assume "pos" command
+	if ($cmd =~ m/\d{1,3}/) {
+		pop @args;
+		push @args, "pos";
+		push @args, $cmd;
+
+		$cmd = "pos";
+		$numberOfArgs = int(@args);
+	}
+
 	if(!exists($sets{$cmd})) {
 		my @cList;
 		foreach my $k (sort keys %sets) {
