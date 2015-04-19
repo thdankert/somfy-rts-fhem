@@ -32,15 +32,10 @@
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
 #
 
-### test paths ???? not yet finished
 #
-# test - all somfy commands for blinds without timings set
+######################################################
 #
-# issue - position was above 200 in a case --> might be resolved ?
-# issue - is numeric state really ok ?
-#
-### Open ??? - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
-### Open ??? - adapt documentation (where needed)
+### Known Issue - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
 
 ######################################################
 
