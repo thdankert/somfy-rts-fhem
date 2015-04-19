@@ -100,7 +100,7 @@ my $somfy_posAccuracy = 5;
 my $somfy_maxRuntime = 50;
 
 my %positions = (
-	"middle" => "50",  
+	"moving" => "50",  
 	"open" => "0", 
 	"off" => "0", 
 	"closed" => "200", 
@@ -645,34 +645,34 @@ sub SOMFY_InternalSet($@) {
 		#if timings not set 
 
 		if($cmd eq 'on') {
-			$newState = 'middle';
+			$newState = 'moving';
 			$updatetime = $somfy_maxRuntime;
 			$updateState = 'closed';
 		} elsif($cmd eq 'off') {
-			$newState = 'middle';
+			$newState = 'moving';
 			$updatetime = $somfy_maxRuntime;
 			$updateState = 'open';
 
 		} elsif($cmd eq 'on-for-timer') {
 			# elsif cmd == on-for-timer - time x
 			$move = 'on';
-			$newState = 'middle';
+			$newState = 'moving';
 			$drivetime = $arg1;
 			if ( $drivetime == 0 ) {
 				$move = 'stop';
 			} else {
-				$updateState = 'middle';
+				$updateState = 'moving';
 			}
 
 		} elsif($cmd eq 'off-for-timer') {
 			# elsif cmd == off-for-timer - time x
 			$move = 'off';
-			$newState = 'middle';
+			$newState = 'moving';
 			$drivetime = $arg1;
 			if ( $drivetime == 0 ) {
 				$move = 'stop';
 			} else {
-				$updateState = 'middle';
+				$updateState = 'moving';
 			}
 
 		} elsif($cmd =~m/stop|go_my/) { 
@@ -977,8 +977,8 @@ sub SOMFY_CalcCurrentPos($$$$) {
 			Log3($name,1,"SOMFY_CalcCurrentPos: $name move wrong $move");
 		}			
 	} else {
-		### no timings set so just assume it is always middle
-		$newPos = $positions{'middle'};
+		### no timings set so just assume it is always moving
+		$newPos = $positions{'moving'};
 	}
 	
 	return $newPos;
