@@ -37,6 +37,13 @@
 #
 ### Known Issue - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
 
+# Somfy Modul - TODO
+# - 100 bis 200% besser --> 100% / down/ complete
+# - if position is reached already, just sent command and update state (down in % 200 / up in 0%)
+# - regular update on state during run of blind (every 5 seconds ?)
+# - if drive-down-time-to-close == drive-down-time-to-100 --> go only to 100
+
+
 ######################################################
 
 package main;
@@ -80,6 +87,8 @@ my %somfy_c2b;
 
 my $somfy_defsymbolwidth = 1240;    # Default Somfy frame symbol width
 my $somfy_defrepetition = 6;	# Default Somfy frame repeat counter
+
+my $somfy_updateFreq = 5;	# Interval for State update
 
 my %models = ( somfyblinds => 'blinds', ); # supported models (blinds only, as of now)
 
@@ -627,7 +636,10 @@ sub SOMFY_InternalSet($@) {
 		RemoveInternalTimer($hash);
 		
 		$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, SOMFY_UpdateStartTime($hash) );
+		delete $hash->{starttime};
 		delete $hash->{updateState};
+		delete $hash->{runningtime};
+		delete $hash->{runningcmd};
 	}
 
 	################ No error returns after this point to avoid stopped timer causing confusion...
@@ -813,19 +825,28 @@ sub SOMFY_InternalSet($@) {
 		$drivetime = 0;
 	} 
 	
-	if($drivetime > 0) {
-		# timer fuer stop starten
-		Log3($name,4,"SOMFY_set: $name -> stopping in $drivetime sec");
-		InternalTimer(gettimeofday()+$drivetime,"SOMFY_StopAfterMoving",$hash,0);
-
-	} elsif($updatetime > 0) {
-		# timer fuer Update state starten
-		Log3($name,4,"SOMFY_set: $name -> state update in $updatetime sec");
-		InternalTimer(gettimeofday()+$updatetime,"SOMFY_UpdateAfterMoving",$hash,0);
-	}
-
 	### update time stamp
 	SOMFY_UpdateStartTime($hash);
+	if($drivetime > 0) {
+		$hash->{runningcmd} = 'stop';
+		$hash->{runningtime} = $drivetime;
+	} elsif($updatetime > 0) {
+		$hash->{updatetime} = $updatetime;
+	}
+
+	if($hash->{runningtime} > 0) {
+		# timer fuer stop starten
+		if ( defined( $hash->{runningcmd} )) {
+			Log3($name,4,"SOMFY_set: $name -> stopping in $$hash->{runningtime} sec");
+		} else {
+			Log3($name,4,"SOMFY_set: $name -> update state in $$hash->{runningtime} sec");
+		}
+		my $utime = $hash->{runningtime} ;
+		if($utime > $somfy_updateFreq) {
+			$utime = $somfy_updateFreq;
+		}
+		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
+	}
 
 	return undef;
 } # end sub SOMFY_setFN
@@ -857,31 +878,43 @@ sub SOMFY_UpdateStartTime($) {
 	$t1 = $d->{starttime} if(exists($d->{starttime} ));
 	$d->{starttime}  = $t;
 	my $dt = sprintf("%.2f", $t - $t1);
-
+	
 	return $dt;
 } # end sub SOMFY_UpdateStartTime
 
-###################################
-sub SOMFY_StopAfterMoving($) {
-	my ($hash) = @_;
-
-	Log3($hash->{NAME},4,"SOMFY_StopAfterMoving");
-
-	SOMFY_SendCommand($hash,'stop');
-
-	SOMFY_UpdateAfterMoving($hash)
-} # end sub SOMFY_StopAfterMoving
 
 ###################################
-sub SOMFY_UpdateAfterMoving($) {
+sub SOMFY_TimedUpdate($) {
 	my ($hash) = @_;
+
+	Log3($hash->{NAME},4,"SOMFY_TimedUpdate");
 	
-	Log3($hash->{NAME},4,"SOMFY_UpdateAfterMoving: updateState :$hash->{updateState}: ");
-
-	SOMFY_UpdateState( $hash, $hash->{updateState}, 'stop', undef );
-	delete $hash->{starttime};
-
-} # end sub SOMFY_UpdateAfterMoving
+	# get current infos 
+	my $pos = ReadingsVal($$hash->{NAME},'position',undef);
+	
+	my $dt = SOMFY_UpdateStartTime($hash);
+	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, SOMFY_UpdateStartTime($hash) );
+	my $posRounded = SOMFY_RoundInternal( $pos );
+	
+	$hash->{runningtime} = $hash->{runningtime} - $dt;
+	if ( $hash->{runningtime} <= 0) {
+		if ( defined( $hash->{runningcmd} ) ) {
+			SOMFY_SendCommand($hash, $hash->{runningcmd});
+		}
+		SOMFY_UpdateState( $hash, $hash->{updateState}, 'stop', undef );
+		delete $hash->{starttime};
+		delete $hash->{runningtime};
+		delete $hash->{runningcmd};
+	} else {
+		my $utime = $hash->{runningtime} ;
+		if($utime > $somfy_updateFreq) {
+			$utime = $somfy_updateFreq;
+		}
+		SOMFY_UpdateState( $hash, $posRounded, $hash->{move}, $hash->{updateState} );
+		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
+	}
+	
+} # end sub SOMFY_TimedUpdate
 
 
 ###################################
