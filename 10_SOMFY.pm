@@ -6,14 +6,6 @@
 #
 # Needs CULFW V 1.59 or higher (support for "Y" command).
 #
-######################################################
-# $Id: 10_SOMFY.pm 7988 2015-02-14 22:04:45Z thomyd $
-#
-# SOMFY RTS / Simu Hz protocol module for FHEM
-# (c) Thomas Dankert <post@thomyd.de>
-#
-# Needs CULFW V 1.59 or higher (support for "Y" command).
-#
 # Published under GNU GPL License, v2
 #
 # History:
