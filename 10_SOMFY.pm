@@ -6,30 +6,39 @@
 #
 # Needs CULFW V 1.59 or higher (support for "Y" command).
 #
+######################################################
+# $Id: 10_SOMFY.pm 7988 2015-02-14 22:04:45Z thomyd $
+#
+# SOMFY RTS / Simu Hz protocol module for FHEM
+# (c) Thomas Dankert <post@thomyd.de>
+#
+# Needs CULFW V 1.59 or higher (support for "Y" command).
+#
 # Published under GNU GPL License, v2
 #
 # History:
 #	1.0		thomyd			initial implementation
 #
-#	1.1		Elektrolurch	state changed to open,close,pos <x>
+#	1.1		Elektrolurch		state changed to open,close,pos <x>
 # 							for using "set device pos <value> the attributes
 #							drive-down-time-to-100, drive-down-time-to-close,
 #							drive-up-time-to-100 and drive-up-time-to-open must be set
 # 							Hardware section seperated to SOMFY_SetCommand
 #
-#	1.2		Elektrolurch	state is now set after reaching the position of the blind
+#	1.2		Elektrolurch		state is now set after reaching the position of the blind
 #							preparation for receiving signals of Somfy remotes signals,
 #							associated with the blind
 #
 #	1.3		thomyd			Basic implementation of "parse" function, requires updated CULFW
 #							Removed open/close as the same functionality can be achieved with an eventMap.
 #
-#	1.4 	thomyd			Implemented fallback on/off-for-timer methods and only show warning about stop/go-my
+#	1.4 		thomyd			Implemented fallback on/off-for-timer methods and only show warning about stop/go-my
 #							if the positioning attributes are set.
 #
 #	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 #
-#	1.6	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#	1.6		viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#
 #									Further refined:
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
 #									2015-04-30 - For blinds normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
@@ -573,6 +582,16 @@ sub SOMFY_InternalSet($@) {
 	return "SOMFY_set: No set value specified" if ( $numberOfArgs < 1 );
 
 	my $cmd = lc($args[0]);
+
+	# just a number provided, assume "pos" command
+	if ($cmd =~ m/\d{1,3}/) {
+		pop @args;
+		push @args, "pos";
+		push @args, $cmd;
+
+		$cmd = "pos";
+		$numberOfArgs = int(@args);
+	}
 
 	if(!exists($sets{$cmd})) {
 		my @cList;
