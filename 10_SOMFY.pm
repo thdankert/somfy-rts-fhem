@@ -31,7 +31,8 @@
 #
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
-#
+#									2015-04-30 - For markisen normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and same for up times)
+
 
 #
 ######################################################
@@ -40,7 +41,6 @@
 
 # Somfy Modul - TODO
 # - 100 bis 200% besser --> 100% / down/ complete
-# - if position is reached already, just sent command and update state (down in % 200 / up in 0%)
 # - if drive-down-time-to-close == drive-down-time-to-100 --> go only to 100
 
 
@@ -794,8 +794,14 @@ sub SOMFY_InternalSet($@) {
 			}
 
 		}			
+
+		## special case close is at 100 ("markisen")
+		if( ( $t1downclose == $t1down100) && ( $t1upopen == $t1up100) ) {
+			$updateState = min( 100, $updateState );
+			$newState = min( 100, $posRounded );
+		}
 	}
-	
+
 	### update hash / readings
 	Log3($name,5,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
 	if ( defined($updateState)) {
