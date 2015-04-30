@@ -31,20 +31,18 @@
 #
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
-#									2015-04-30 - For markisen normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and same for up times)
-
+#									2015-04-30 - For markisen normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
+#         				2015-04-30 - new reading exact position called 'exact' also used for further pos calculations
 
 #
 ######################################################
 #
 ### Known Issue - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
 
-# Somfy Modul - TODO
-# - 100 bis 200% besser --> 100% / down/ complete
-# - if drive-down-time-to-close == drive-down-time-to-100 --> go only to 100
-# - document shutter / complete shutter
-# - ISSUE: with liitation to 100, the settings are not yet done correctly in pos calculation
+# Somfy Modul - OPEN
+# - 100 bis 200% new states --> 100% / down/ complete
 # - reduce logging in update and set
+# - handle document shutter / complete shutter
 
 ######################################################
 
@@ -52,6 +50,8 @@ package main;
 
 use strict;
 use warnings;
+
+use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 
 my %codes = (
 	"10" => "go-my",    # goto "my" position
@@ -102,7 +102,7 @@ my %models = ( somfyblinds => 'blinds', somfyshutter => 'shutter', ); # supporte
 # new globals for new set 
 #
 
-my $somfy_posAccuracy = 5;
+my $somfy_posAccuracy = 2;
 my $somfy_maxRuntime = 50;
 
 my %positions = (
@@ -493,9 +493,11 @@ sub SOMFY_Attr(@) {
 	# $name is device name
 	# aName and aVal are Attribute name and value
 	if ($cmd eq "set") {
-		if ($aName =~/drive-(down|up)-time-to.*/) {
-			# check name and value
+		if($aName eq 'drive-up-time-to-100') {
 			return "SOMFY_attr: value must be >=0 and <= 100" if($aVal < 0 || $aVal > 100);
+		} elsif ($aName =~/drive-(down|up)-time-to.*/) {
+			# check name and value
+			return "SOMFY_attr: value must be >0 and <= 100" if($aVal <= 0 || $aVal > 100);
 		}
 
 		if ($aName eq 'drive-down-time-to-100') {
@@ -618,8 +620,11 @@ sub SOMFY_InternalSet($@) {
 	my $updateState;
 	
 	# get current infos 
-	my $pos = ReadingsVal($name,'position',undef);
 	my $state = $hash->{STATE}; 
+	my $pos = ReadingsVal($name,'exact',undef);
+	if ( !defined($pos) ) {
+		$pos = ReadingsVal($name,'position',undef);
+	}
 
 	# translate state info to numbers - closed = 200 , open = 0    (correct missing values)
 	if ( !defined($pos) ) {
@@ -802,13 +807,15 @@ sub SOMFY_InternalSet($@) {
 
 		## special case close is at 100 ("markisen")
 		if( ( $t1downclose == $t1down100) && ( $t1up100 == 0 ) ) {
-			$updateState = max( 100, $updateState );
-			$newState = max( 100, $posRounded );
+			if ( defined( $updateState )) {
+				$updateState = min( 100, $updateState );
+			}
+			$newState = min( 100, $posRounded );
 		}
 	}
 
 	### update hash / readings
-	Log3($name,5,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
+	Log3($name,1,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
 	if ( defined($updateState)) {
 		Log3($name,5,"SOMFY_set: handled for drive/udpate:  updateState :$updateState:  drivet :$drivetime: updatet :$updatetime: ");
 	} else {
@@ -905,13 +912,14 @@ sub SOMFY_TimedUpdate($) {
 	Log3($hash->{NAME},1,"SOMFY_TimedUpdate");
 	
 	# get current infos 
-	my $pos = ReadingsVal($hash->{NAME},'position',undef);
+	my $pos = ReadingsVal($hash->{NAME},'exact',undef);
+	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : pos so far : $pos");
 	
 	my $dt = SOMFY_UpdateStartTime($hash);
 	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, $dt );
-	my $posRounded = SOMFY_RoundInternal( $pos );
+#	my $posRounded = SOMFY_RoundInternal( $pos );
 	
-	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos $posRounded");
+	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos (rounded): $pos ");
 	
 	$hash->{runningtime} = $hash->{runningtime} - $dt;
 	if ( $hash->{runningtime} <= 0) {
@@ -927,11 +935,11 @@ sub SOMFY_TimedUpdate($) {
 		if($utime > $somfy_updateFreq) {
 			$utime = $somfy_updateFreq;
 		}
-		SOMFY_UpdateState( $hash, $posRounded, $hash->{move}, $hash->{updateState} );
+		SOMFY_UpdateState( $hash, $pos, $hash->{move}, $hash->{updateState} );
 		if ( defined( $hash->{runningcmd} )) {
-			Log3($hash->{NAME},1,"SOMFY_set: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
+			Log3($hash->{NAME},1,"SOMFY_TimedUpdate: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
 		} else {
-			Log3($hash->{NAME},1,"SOMFY_set: $hash->{NAME} -> update state in $hash->{runningtime} sec");
+			Log3($hash->{NAME},1,"SOMFY_TimedUpdate: $hash->{NAME} -> update state in $hash->{runningtime} sec");
 		}
 		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
 	}
@@ -948,25 +956,28 @@ sub SOMFY_UpdateState($$$$) {
 	my $timestamp = TimeNow();
 
 	$hash->{READINGS}{state}{TIME} = $timestamp;
+	$hash->{READINGS}{position}{TIME} = $timestamp;
 	if(exists($positions{$newState})) {
 		$hash->{READINGS}{state}{VAL}  = $newState;
 		$hash->{STATE} = $newState;
 		$hash->{CHANGED}[0]            = $newState;
-	} else {
+
+		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
+		$hash->{position} = $positions{$newState};
+
+		} else {
 		my $rounded = SOMFY_Runden( $newState );
 		$hash->{READINGS}{state}{VAL}  = $rounded;
 		$hash->{STATE} = $rounded;
 		$hash->{CHANGED}[0]            = $rounded;
+
+		$hash->{READINGS}{position}{VAL}  = $rounded;
+		$hash->{position} = $rounded;
 	}
 
-	$hash->{READINGS}{position}{TIME} = $timestamp;
-	if(exists($positions{$newState})) {
-		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
-		$hash->{position} = $positions{$newState};
-	} else {
-		$hash->{READINGS}{position}{VAL}  = $newState;
-		$hash->{position} = $newState;
-	}
+	$hash->{READINGS}{exact}{TIME} = $timestamp;
+	$hash->{READINGS}{exact}{VAL}  = $newState;
+	$hash->{exact} = $newState;
 
 	if ( defined( $updateState ) ) {
 		$hash->{updateState} = $updateState;
@@ -994,39 +1005,62 @@ sub SOMFY_CalcCurrentPos($$$$) {
 	my $t1up100 =  AttrVal($name,'drive-up-time-to-100',undef);
 
 	if(defined($t1down100) && defined($t1downclose) && defined($t1up100) && defined($t1upopen)) {
-		if($move eq 'on') {
-			if ( $pos >= 100 ) {
-				$newPos = $dt * 100 / ( $t1downclose - $t1down100 );
-				$newPos = min( 200, $pos + $newPos );
-			} else {
-				# calc remaining time to 100% 
-				my $remTime = ( 100 - $pos ) * $t1down100 / 100;
-				if ( $remTime > $dt ) {
-					$newPos = $pos + ( $dt * 100 / $t1down100 );
-				} else {
-					$dt = $dt - $remTime;
-					$newPos = 100 + ( $dt * 100 / ( $t1downclose - $t1down100 ) );
+		if( ( $t1downclose == $t1down100) && ( $t1up100 == 0 ) ) {
+			$pos = min( 100, $pos );
+			if($move eq 'on') {
+				$newPos = min( 100, $pos );
+				if ( $pos < 100 ) {
+					# calc remaining time to 100% 
+					my $remTime = ( 100 - $pos ) * $t1down100 / 100;
+					if ( $remTime > $dt ) {
+						$newPos = $pos + ( $dt * 100 / $t1down100 );
+					}
 				}
-			}
 
-		} elsif($move eq 'off') {
-
-			if ( $pos <= 100 ) {
-				$newPos = $dt * 100 / ( $t1upopen - $t1up100 );
-				$newPos = max( 0, $pos - $newPos );
-			} else {
-				# calc remaining time to 100% 
-				my $remTime = ( $pos - 100 ) * $t1up100 / 100;
-				if ( $remTime > $dt ) {
-					$newPos = $pos - ( $dt * 100 / $t1up100 );
-				} else {
-					$dt = $dt - $remTime;
-					$newPos = 100 - ( $dt * 100 / ( $t1upopen - $t1up100 ) );
+			} elsif($move eq 'off') {
+				$newPos = max( 0, $pos );
+				if ( $pos > 0 ) {
+					$newPos = $dt * 100 / ( $t1upopen );
+					$newPos = max( 0, ($pos - $newPos) );
 				}
-			}
+			} else {
+				Log3($name,1,"SOMFY_CalcCurrentPos: $name move wrong $move");
+			}			
 		} else {
-			Log3($name,1,"SOMFY_CalcCurrentPos: $name move wrong $move");
-		}			
+			if($move eq 'on') {
+				if ( $pos >= 100 ) {
+					$newPos = $dt * 100 / ( $t1downclose - $t1down100 );
+					$newPos = min( 200, $pos + $newPos );
+				} else {
+					# calc remaining time to 100% 
+					my $remTime = ( 100 - $pos ) * $t1down100 / 100;
+					if ( $remTime > $dt ) {
+						$newPos = $pos + ( $dt * 100 / $t1down100 );
+					} else {
+						$dt = $dt - $remTime;
+						$newPos = 100 + ( $dt * 100 / ( $t1downclose - $t1down100 ) );
+					}
+				}
+
+			} elsif($move eq 'off') {
+
+				if ( $pos <= 100 ) {
+					$newPos = $dt * 100 / ( $t1upopen - $t1up100 );
+					$newPos = max( 0, $pos - $newPos );
+				} else {
+					# calc remaining time to 100% 
+					my $remTime = ( $pos - 100 ) * $t1up100 / 100;
+					if ( $remTime > $dt ) {
+						$newPos = $pos - ( $dt * 100 / $t1up100 );
+					} else {
+						$dt = $dt - $remTime;
+						$newPos = 100 - ( $dt * 100 / ( $t1upopen - $t1up100 ) );
+					}
+				}
+			} else {
+				Log3($name,1,"SOMFY_CalcCurrentPos: $name move wrong $move");
+			}			
+		}
 	} else {
 		### no timings set so just assume it is always moving
 		$newPos = $positions{'moving'};
