@@ -30,6 +30,7 @@
 #	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 #
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#									state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
 #
 
 #
@@ -40,7 +41,6 @@
 # Somfy Modul - TODO
 # - 100 bis 200% besser --> 100% / down/ complete
 # - if position is reached already, just sent command and update state (down in % 200 / up in 0%)
-# - regular update on state during run of blind (every 5 seconds ?)
 # - if drive-down-time-to-close == drive-down-time-to-100 --> go only to 100
 
 
@@ -88,7 +88,7 @@ my %somfy_c2b;
 my $somfy_defsymbolwidth = 1240;    # Default Somfy frame symbol width
 my $somfy_defrepetition = 6;	# Default Somfy frame repeat counter
 
-my $somfy_updateFreq = 5;	# Interval for State update
+my $somfy_updateFreq = 3;	# Interval for State update
 
 my %models = ( somfyblinds => 'blinds', ); # supported models (blinds only, as of now)
 
@@ -827,25 +827,28 @@ sub SOMFY_InternalSet($@) {
 	
 	### update time stamp
 	SOMFY_UpdateStartTime($hash);
+	$hash->{runningtime} = 0;
 	if($drivetime > 0) {
 		$hash->{runningcmd} = 'stop';
 		$hash->{runningtime} = $drivetime;
 	} elsif($updatetime > 0) {
-		$hash->{updatetime} = $updatetime;
+		$hash->{runningtime} = $updatetime;
 	}
 
 	if($hash->{runningtime} > 0) {
 		# timer fuer stop starten
 		if ( defined( $hash->{runningcmd} )) {
-			Log3($name,4,"SOMFY_set: $name -> stopping in $$hash->{runningtime} sec");
+			Log3($name,1,"SOMFY_set: $name -> stopping in $hash->{runningtime} sec");
 		} else {
-			Log3($name,4,"SOMFY_set: $name -> update state in $$hash->{runningtime} sec");
+			Log3($name,1,"SOMFY_set: $name -> update state in $hash->{runningtime} sec");
 		}
 		my $utime = $hash->{runningtime} ;
 		if($utime > $somfy_updateFreq) {
 			$utime = $somfy_updateFreq;
 		}
 		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
+	} else {
+		delete $hash->{runningtime};
 	}
 
 	return undef;
@@ -887,14 +890,16 @@ sub SOMFY_UpdateStartTime($) {
 sub SOMFY_TimedUpdate($) {
 	my ($hash) = @_;
 
-	Log3($hash->{NAME},4,"SOMFY_TimedUpdate");
+	Log3($hash->{NAME},1,"SOMFY_TimedUpdate");
 	
 	# get current infos 
-	my $pos = ReadingsVal($$hash->{NAME},'position',undef);
+	my $pos = ReadingsVal($hash->{NAME},'position',undef);
 	
 	my $dt = SOMFY_UpdateStartTime($hash);
-	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, SOMFY_UpdateStartTime($hash) );
+	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, $dt );
 	my $posRounded = SOMFY_RoundInternal( $pos );
+	
+	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos $posRounded");
 	
 	$hash->{runningtime} = $hash->{runningtime} - $dt;
 	if ( $hash->{runningtime} <= 0) {
@@ -911,9 +916,15 @@ sub SOMFY_TimedUpdate($) {
 			$utime = $somfy_updateFreq;
 		}
 		SOMFY_UpdateState( $hash, $posRounded, $hash->{move}, $hash->{updateState} );
+		if ( defined( $hash->{runningcmd} )) {
+			Log3($hash->{NAME},1,"SOMFY_set: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
+		} else {
+			Log3($hash->{NAME},1,"SOMFY_set: $hash->{NAME} -> update state in $hash->{runningtime} sec");
+		}
 		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
 	}
 	
+	Log3($hash->{NAME},1,"SOMFY_TimedUpdate DONE");
 } # end sub SOMFY_TimedUpdate
 
 
