@@ -31,7 +31,7 @@
 #
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
-#									2015-04-30 - For markisen normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
+#									2015-04-30 - For blinds normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
 #         				2015-04-30 - new reading exact position called 'exact' also used for further pos calculations
 
 #
@@ -40,9 +40,8 @@
 ### Known Issue - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
 
 # Somfy Modul - OPEN
-# - 100 bis 200% new states --> 100% / down/ complete
-# - reduce logging in update and set
-# - handle document shutter / complete shutter
+# - 100 bis 200% new states --> 100% / down / complete
+# - Complete shutter / blind as different model
 
 ######################################################
 
@@ -815,7 +814,7 @@ sub SOMFY_InternalSet($@) {
 	}
 
 	### update hash / readings
-	Log3($name,1,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
+	Log3($name,3,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
 	if ( defined($updateState)) {
 		Log3($name,5,"SOMFY_set: handled for drive/udpate:  updateState :$updateState:  drivet :$drivetime: updatet :$updatetime: ");
 	} else {
@@ -856,9 +855,9 @@ sub SOMFY_InternalSet($@) {
 	if($hash->{runningtime} > 0) {
 		# timer fuer stop starten
 		if ( defined( $hash->{runningcmd} )) {
-			Log3($name,1,"SOMFY_set: $name -> stopping in $hash->{runningtime} sec");
+			Log3($name,4,"SOMFY_set: $name -> stopping in $hash->{runningtime} sec");
 		} else {
-			Log3($name,1,"SOMFY_set: $name -> update state in $hash->{runningtime} sec");
+			Log3($name,4,"SOMFY_set: $name -> update state in $hash->{runningtime} sec");
 		}
 		my $utime = $hash->{runningtime} ;
 		if($utime > $somfy_updateFreq) {
@@ -909,17 +908,17 @@ sub SOMFY_UpdateStartTime($) {
 sub SOMFY_TimedUpdate($) {
 	my ($hash) = @_;
 
-	Log3($hash->{NAME},1,"SOMFY_TimedUpdate");
+	Log3($hash->{NAME},4,"SOMFY_TimedUpdate");
 	
 	# get current infos 
 	my $pos = ReadingsVal($hash->{NAME},'exact',undef);
-	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : pos so far : $pos");
+	Log3($hash->{NAME},5,"SOMFY_TimedUpdate : pos so far : $pos");
 	
 	my $dt = SOMFY_UpdateStartTime($hash);
 	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, $dt );
 #	my $posRounded = SOMFY_RoundInternal( $pos );
 	
-	Log3($hash->{NAME},1,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos (rounded): $pos ");
+	Log3($hash->{NAME},5,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos (rounded): $pos ");
 	
 	$hash->{runningtime} = $hash->{runningtime} - $dt;
 	if ( $hash->{runningtime} <= 0) {
@@ -937,14 +936,14 @@ sub SOMFY_TimedUpdate($) {
 		}
 		SOMFY_UpdateState( $hash, $pos, $hash->{move}, $hash->{updateState} );
 		if ( defined( $hash->{runningcmd} )) {
-			Log3($hash->{NAME},1,"SOMFY_TimedUpdate: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
+			Log3($hash->{NAME},4,"SOMFY_TimedUpdate: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
 		} else {
-			Log3($hash->{NAME},1,"SOMFY_TimedUpdate: $hash->{NAME} -> update state in $hash->{runningtime} sec");
+			Log3($hash->{NAME},4,"SOMFY_TimedUpdate: $hash->{NAME} -> update state in $hash->{runningtime} sec");
 		}
 		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
 	}
 	
-	Log3($hash->{NAME},1,"SOMFY_TimedUpdate DONE");
+	Log3($hash->{NAME},5,"SOMFY_TimedUpdate DONE");
 } # end sub SOMFY_TimedUpdate
 
 
@@ -1168,12 +1167,26 @@ sub SOMFY_CalcCurrentPos($$$$) {
       This can be used to go to a specific position by measuring the time it takes to close the blind completely.
       </li>
       <li>pos value<br>
-	  The position must be between 0 and 100 and the appropriate
-	  attributes drive-down-time-to-100, drive-down-time-to-close,
-	  drive-up-time-to-100 and drive-up-time-to-open must be set.<br>
-	  pos 100 means the blind covers the window (but is not completely shut), 0 means it is completely open.
-	  </li>
-    </ul>
+		
+			The position is variying between 0 completely open and 100 for covering the full window.
+			The position must be between 0 and 100 and the appropriate
+			attributes drive-down-time-to-100, drive-down-time-to-close,
+			drive-up-time-to-100 and drive-up-time-to-open must be set.<br>
+			</li>
+			</ul>
+
+		The position reading distinuishes between multiple cases
+    <ul>
+      <li>Without timing values set only generic values are used for status and position: <pre>open, closed, moving</pre> are used
+      </li>
+			<li>With timing values set but drive-down-time-to-close equal to drive-down-time-to-100 and drive-up-time-to-100 equal 0 
+			the device is considered to only vary between 0 and 100 (100 being completely closed)
+      </li>
+			<li>With full timing values set the device is considerd a window shutter (Rolladen) with a difference between 
+			covering the full window (position 100) and being completely closed (position 200)
+      </li>
+		</ul>
+
   </ul>
   <br>
 
