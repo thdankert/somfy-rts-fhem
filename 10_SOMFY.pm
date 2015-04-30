@@ -30,7 +30,7 @@
 #	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 #
 #	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
-#									state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
+#									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
 #
 
 #
@@ -849,6 +849,7 @@ sub SOMFY_InternalSet($@) {
 		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
 	} else {
 		delete $hash->{runningtime};
+		delete $hash->{starttime};
 	}
 
 	return undef;
