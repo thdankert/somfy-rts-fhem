@@ -42,7 +42,9 @@
 # Somfy Modul - TODO
 # - 100 bis 200% besser --> 100% / down/ complete
 # - if drive-down-time-to-close == drive-down-time-to-100 --> go only to 100
-
+# - document shutter / complete shutter
+# - ISSUE: with liitation to 100, the settings are not yet done correctly in pos calculation
+# - reduce logging in update and set
 
 ######################################################
 
@@ -90,7 +92,7 @@ my $somfy_defrepetition = 6;	# Default Somfy frame repeat counter
 
 my $somfy_updateFreq = 3;	# Interval for State update
 
-my %models = ( somfyblinds => 'blinds', ); # supported models (blinds only, as of now)
+my %models = ( somfyblinds => 'blinds', somfyshutter => 'shutter', ); # supported models (blinds  and shutters)
 
 
 ######################################################
@@ -161,7 +163,7 @@ sub SOMFY_Initialize($) {
 	  . " do_not_notify:1,0"
 	  . " ignore:0,1"
 	  . " dummy:1,0"
-	  . " model:somfyblinds"
+	  . " model:somfyblinds,somfyshutter"
 	  . " loglevel:0,1,2,3,4,5,6";
 
 }
@@ -493,7 +495,7 @@ sub SOMFY_Attr(@) {
 	if ($cmd eq "set") {
 		if ($aName =~/drive-(down|up)-time-to.*/) {
 			# check name and value
-			return "SOMFY_attr: value must be >0 and <= 100" if($aVal <= 0 || $aVal > 100);
+			return "SOMFY_attr: value must be >=0 and <= 100" if($aVal < 0 || $aVal > 100);
 		}
 
 		if ($aName eq 'drive-down-time-to-100') {
@@ -530,6 +532,7 @@ sub SOMFY_Attr(@) {
 ### 	syntax set <name> [ <virtual|send> ] <normal set parameter>
 ### position and state are also updated on stop or other commands based on remaining time
 ### position is handled between 0 and 100 blinds down but not completely closed and 200 completely closed
+### 	if timings for 100 and close are equal no position above 100 is used (then 100 == closed)
 ### position is rounded to a value of 5 and state is rounded to a value of 10
 #
 ### General assumption times are rather on the upper limit to reach desired state
@@ -598,6 +601,8 @@ sub SOMFY_InternalSet($@) {
 	my $t1upopen = AttrVal($name,'drive-up-time-to-open',undef);
 	my $t1up100 =  AttrVal($name,'drive-up-time-to-100',undef);
 
+	my $model =  AttrVal($name,'model',$models{somfyblinds});
+	
 	if($cmd eq 'pos') {
 		return "SOMFY_set: No pos specification"  if(!defined($arg1));
 		return  "SOMFY_set: $arg1 must be > 0 and < 100 for pos" if($arg1 < 0 || $arg1 > 100);
@@ -796,9 +801,9 @@ sub SOMFY_InternalSet($@) {
 		}			
 
 		## special case close is at 100 ("markisen")
-		if( ( $t1downclose == $t1down100) && ( $t1upopen == $t1up100) ) {
-			$updateState = min( 100, $updateState );
-			$newState = min( 100, $posRounded );
+		if( ( $t1downclose == $t1down100) && ( $t1up100 == 0 ) ) {
+			$updateState = max( 100, $updateState );
+			$newState = max( 100, $posRounded );
 		}
 	}
 
