@@ -29,7 +29,8 @@
 #
 #	1.5		thomyd			Bugfix for wrong attribute names when calculating the updatetime (drive-up-...)
 #
-#	1.5jv	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#	1.6	viegener		New state and action handling (trying to stay compatible also adding virtual receiver capabilities)
+#									Further refined:
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
 #									2015-04-30 - For blinds normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
 #         				2015-04-30 - new reading exact position called 'exact' also used for further pos calculations
