@@ -110,9 +110,28 @@ my %positions = (
 	"moving" => "50",  
 	"open" => "0", 
 	"off" => "0", 
+	"down" => "150", 
 	"closed" => "200", 
 	"on" => "200"
 );
+
+
+my %translations = (
+	"0" => "open",  
+	"10" => "10",  
+	"20" => "20",  
+	"30" => "30",  
+	"40" => "40",  
+	"50" => "50",  
+	"60" => "60",  
+	"70" => "70",  
+	"80" => "80",  
+	"90" => "90",  
+	"100" => "100",  
+	"150" => "down",  
+	"200" => "closed" 
+);
+
 
 ##################################################
 # Forward declarations
@@ -428,7 +447,25 @@ sub SOMFY_SendCommand($@)
 ###################################
 sub SOMFY_Runden($) {
 	my ($v) = @_;
-	return sprintf("%d", ($v + 5) /10) * 10;
+	if ( $v > 100 ) {
+		$v = 100 + ( int(($v - 75) / 50) * 50);
+	} else {
+		$v = int(($v + 5) /10) * 10;
+	}
+	
+	return sprintf("%d", $v );
+} # end sub SOMFY_Runden
+
+
+###################################
+sub SOMFY_Translate($) {
+	my ($v) = @_;
+
+	if(exists($translations{$v})) {
+		$v = $translations{$v}
+	}
+
+	return $v
 } # end sub SOMFY_Runden
 
 
@@ -451,8 +488,8 @@ sub SOMFY_Parse($$) {
     # get command and set new state
 	my $cmd = sprintf("%X", hex(substr($msg, 4, 2)) & 0xF0);
 	if ($cmd eq "10") {
-	 $cmd = "11"; # use "stop" instead of "go-my"
-    }
+		$cmd = "11"; # use "stop" instead of "go-my"
+  }
 
 	my $newstate = $codes{ $cmd };
 
@@ -976,11 +1013,12 @@ sub SOMFY_UpdateState($$$$) {
 		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
 		$hash->{position} = $positions{$newState};
 
-		} else {
+	} else {
 		my $rounded = SOMFY_Runden( $newState );
-		$hash->{READINGS}{state}{VAL}  = $rounded;
-		$hash->{STATE} = $rounded;
-		$hash->{CHANGED}[0]            = $rounded;
+		my $stateTrans = SOMFY_Translate( $rounded );
+		$hash->{READINGS}{state}{VAL}  = $stateTrans;
+		$hash->{STATE} = $stateTrans;
+		$hash->{CHANGED}[0]            = $stateTrans;
 
 		$hash->{READINGS}{position}{VAL}  = $rounded;
 		$hash->{position} = $rounded;
