@@ -447,8 +447,8 @@ sub SOMFY_SendCommand($@)
 ###################################
 sub SOMFY_Runden($) {
 	my ($v) = @_;
-	if ( $v > 100 ) {
-		$v = 100 + ( int(($v - 75) / 50) * 50);
+	if ( ( $v > 105 ) && ( $v < 195 ) ) {
+		$v = 150;
 	} else {
 		$v = int(($v + 5) /10) * 10;
 	}
@@ -935,7 +935,7 @@ sub SOMFY_InternalSet($@) {
 ###################################
 sub SOMFY_RoundInternal($) {
 	my ($v) = @_;
-	return sprintf("%d", ($v + ($somfy_posAccuracy/2)) /$somfy_posAccuracy) * $somfy_posAccuracy;
+	return sprintf("%d", ($v + ($somfy_posAccuracy/2)) / $somfy_posAccuracy) * $somfy_posAccuracy;
 } # end sub SOMFY_RoundInternal
 
 #############################
