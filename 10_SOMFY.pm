@@ -110,9 +110,28 @@ my %positions = (
 	"moving" => "50",  
 	"open" => "0", 
 	"off" => "0", 
+	"down" => "150", 
 	"closed" => "200", 
 	"on" => "200"
 );
+
+
+my %translations = (
+	"0" => "open",  
+	"10" => "10",  
+	"20" => "20",  
+	"30" => "30",  
+	"40" => "40",  
+	"50" => "50",  
+	"60" => "60",  
+	"70" => "70",  
+	"80" => "80",  
+	"90" => "90",  
+	"100" => "100",  
+	"150" => "down",  
+	"200" => "closed" 
+);
+
 
 ##################################################
 # Forward declarations
@@ -428,7 +447,25 @@ sub SOMFY_SendCommand($@)
 ###################################
 sub SOMFY_Runden($) {
 	my ($v) = @_;
-	return sprintf("%d", ($v + 5) /10) * 10;
+	if ( ( $v > 105 ) && ( $v < 195 ) ) {
+		$v = 150;
+	} else {
+		$v = int(($v + 5) /10) * 10;
+	}
+	
+	return sprintf("%d", $v );
+} # end sub SOMFY_Runden
+
+
+###################################
+sub SOMFY_Translate($) {
+	my ($v) = @_;
+
+	if(exists($translations{$v})) {
+		$v = $translations{$v}
+	}
+
+	return $v
 } # end sub SOMFY_Runden
 
 
@@ -451,8 +488,8 @@ sub SOMFY_Parse($$) {
     # get command and set new state
 	my $cmd = sprintf("%X", hex(substr($msg, 4, 2)) & 0xF0);
 	if ($cmd eq "10") {
-	 $cmd = "11"; # use "stop" instead of "go-my"
-    }
+		$cmd = "11"; # use "stop" instead of "go-my"
+  }
 
 	my $newstate = $codes{ $cmd };
 
@@ -833,7 +870,8 @@ sub SOMFY_InternalSet($@) {
 		Log3($name,5,"SOMFY_set: handled for drive/udpate:  updateState ::  drivet :$drivetime: updatet :$updatetime: ");
 	}
 			
-	SOMFY_UpdateState( $hash, $newState, $move, $updateState );
+	# bulk update should do trigger if virtual mode
+	SOMFY_UpdateState( $hash, $newState, $move, $updateState, ( $mode eq 'virtual' ) );
 	
 	### send command
 	if ( $mode ne 'virtual' ) {
@@ -897,7 +935,7 @@ sub SOMFY_InternalSet($@) {
 ###################################
 sub SOMFY_RoundInternal($) {
 	my ($v) = @_;
-	return sprintf("%d", ($v + ($somfy_posAccuracy/2)) /$somfy_posAccuracy) * $somfy_posAccuracy;
+	return sprintf("%d", ($v + ($somfy_posAccuracy/2)) / $somfy_posAccuracy) * $somfy_posAccuracy;
 } # end sub SOMFY_RoundInternal
 
 #############################
@@ -937,7 +975,8 @@ sub SOMFY_TimedUpdate($) {
 		if ( defined( $hash->{runningcmd} ) ) {
 			SOMFY_SendCommand($hash, $hash->{runningcmd});
 		}
-		SOMFY_UpdateState( $hash, $hash->{updateState}, 'stop', undef );
+		# trigger update from timer
+		SOMFY_UpdateState( $hash, $hash->{updateState}, 'stop', undef, 1 );
 		delete $hash->{starttime};
 		delete $hash->{runningtime};
 		delete $hash->{runningcmd};
@@ -946,7 +985,7 @@ sub SOMFY_TimedUpdate($) {
 		if($utime > $somfy_updateFreq) {
 			$utime = $somfy_updateFreq;
 		}
-		SOMFY_UpdateState( $hash, $pos, $hash->{move}, $hash->{updateState} );
+		SOMFY_UpdateState( $hash, $pos, $hash->{move}, $hash->{updateState}, 1 );
 		if ( defined( $hash->{runningcmd} )) {
 			Log3($hash->{NAME},4,"SOMFY_TimedUpdate: $hash->{NAME} -> stopping in $hash->{runningtime} sec");
 		} else {
@@ -961,33 +1000,43 @@ sub SOMFY_TimedUpdate($) {
 
 ###################################
 #	SOMFY_UpdateState( $hash, $newState, $move, $updateState );
-sub SOMFY_UpdateState($$$$) {
-	my ($hash, $newState, $move, $updateState) = @_;
+sub SOMFY_UpdateState($$$$$) {
+	my ($hash, $newState, $move, $updateState, $doTrigger) = @_;
 
-	my $timestamp = TimeNow();
+#	my $timestamp = TimeNow();
 
-	$hash->{READINGS}{state}{TIME} = $timestamp;
-	$hash->{READINGS}{position}{TIME} = $timestamp;
+	readingsBeginUpdate($hash);
+
+#	$hash->{READINGS}{state}{TIME} = $timestamp;
+#	$hash->{READINGS}{position}{TIME} = $timestamp;
 	if(exists($positions{$newState})) {
-		$hash->{READINGS}{state}{VAL}  = $newState;
+		readingsBulkUpdate($hash,"state",$newState);
 		$hash->{STATE} = $newState;
-		$hash->{CHANGED}[0]            = $newState;
 
-		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
+#  	$hash->{READINGS}{state}{VAL}  = $newState;
+#		$hash->{CHANGED}[0]            = $newState;
+
+		readingsBulkUpdate($hash,"position",$positions{$newState});
+#		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
 		$hash->{position} = $positions{$newState};
 
-		} else {
+	} else {
 		my $rounded = SOMFY_Runden( $newState );
-		$hash->{READINGS}{state}{VAL}  = $rounded;
-		$hash->{STATE} = $rounded;
-		$hash->{CHANGED}[0]            = $rounded;
+		my $stateTrans = SOMFY_Translate( $rounded );
+		readingsBulkUpdate($hash,"state",$stateTrans);
+		$hash->{STATE} = $stateTrans;
 
-		$hash->{READINGS}{position}{VAL}  = $rounded;
+#		$hash->{READINGS}{state}{VAL}  = $stateTrans;
+#		$hash->{CHANGED}[0]            = $stateTrans;
+
+		readingsBulkUpdate($hash,"position",$rounded);
+#		$hash->{READINGS}{position}{VAL}  = $rounded;
 		$hash->{position} = $rounded;
 	}
 
-	$hash->{READINGS}{exact}{TIME} = $timestamp;
-	$hash->{READINGS}{exact}{VAL}  = $newState;
+		readingsBulkUpdate($hash,"exact",$newState);
+#	$hash->{READINGS}{exact}{TIME} = $timestamp;
+#	$hash->{READINGS}{exact}{VAL}  = $newState;
 	$hash->{exact} = $newState;
 
 	if ( defined( $updateState ) ) {
@@ -997,6 +1046,7 @@ sub SOMFY_UpdateState($$$$) {
 	}
 	$hash->{move} = $move;
 	
+	readingsEndUpdate($hash,$doTrigger); 
 } # end sub SOMFY_UpdateState
 
 ###################################
