@@ -52,7 +52,7 @@ package main;
 use strict;
 use warnings;
 
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
+#use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 
 my %codes = (
 	"10" => "go-my",    # goto "my" position
