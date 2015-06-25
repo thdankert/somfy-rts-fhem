@@ -710,13 +710,15 @@ sub SOMFY_InternalSet($@) {
 		#if timings not set 
 
 		if($cmd eq 'on') {
-			$newState = 'moving';
-			$updatetime = $somfy_maxRuntime;
-			$updateState = 'closed';
+			$newState = 'closed';
+#			$newState = 'moving';
+#			$updatetime = $somfy_maxRuntime;
+#			$updateState = 'closed';
 		} elsif($cmd eq 'off') {
-			$newState = 'moving';
-			$updatetime = $somfy_maxRuntime;
-			$updateState = 'open';
+			$newState = 'open';
+#			$newState = 'moving';
+#			$updatetime = $somfy_maxRuntime;
+#			$updateState = 'open';
 
 		} elsif($cmd eq 'on-for-timer') {
 			# elsif cmd == on-for-timer - time x
