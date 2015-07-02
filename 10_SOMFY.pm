@@ -175,6 +175,7 @@ sub SOMFY_Initialize($) {
 	  . " drive-up-time-to-100"
 	  . " drive-up-time-to-open "
 	  . " IODev"
+	  . " setList"
 	  . " symbol-length"
 	  . " enc-key"
 	  . " rolling-code"
@@ -624,11 +625,17 @@ sub SOMFY_InternalSet($@) {
 
 	if(!exists($sets{$cmd})) {
 		my @cList;
+
+    # overwrite %sets with setList
+    my $atts = AttrVal($name,'setList',undef);
+    my %setlist = split("[: ][ ]*", $atts);
+
 		foreach my $k (sort keys %sets) {
 			my $opts = undef;
 			$opts = $sets{$k};
+      $opts = $setlist{$k} if(exists($setlist{$k}));
 
-			if (defined($opts)) {
+      if (defined($opts)) {
 				push(@cList,$k . ':' . $opts);
 			} else {
 				push (@cList,$k);
@@ -1265,6 +1272,14 @@ sub SOMFY_CalcCurrentPos($$$$) {
         for this "logical" device. An example for the physical device is a CUL.<br>
         Note: The IODev has to be set, otherwise no commands will be sent!<br>
         If you have both a CUL868 and CUL433, use the CUL433 as IODev for increased range.
+		</li><br>
+
+    <a name="setList"></a>
+    <li>setList<br>
+        Space separated list of commands, which will be returned upon "set name ?", 
+        so the FHEMWEB frontend can construct the correct control and command dropdown. Specific controls can be added after a colon for each command
+        <br>
+        Example: <code>attr shutter setList open close pos:textField</code>
 		</li><br>
 
     <a name="eventMap"></a>
