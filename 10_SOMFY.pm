@@ -35,7 +35,8 @@
 #									2015-04-30 - state/position are now regularly updated during longer moves (as specified in somfy_updateFreq in seconds)
 #									2015-04-30 - For blinds normalize on pos 0 to 100 (max) (meaning if drive-down-time-to-close == drive-down-time-to-100 and drive-up-time-to-100 == 0)
 #         				2015-04-30 - new reading exact position called 'exact' also used for further pos calculations
-
+#  2015-07-03 additionalPosReading <name> for allowing to specify an additional reading to contain position for shutter
+#  2015-07-03 Cleanup of reading update routine
 #
 ######################################################
 #
@@ -174,6 +175,7 @@ sub SOMFY_Initialize($) {
 	  . " drive-down-time-to-close"
 	  . " drive-up-time-to-100"
 	  . " drive-up-time-to-open "
+	  . " additionalPosReading  "
 	  . " IODev"
 	  . " setList"
 	  . " symbol-length"
@@ -1012,40 +1014,36 @@ sub SOMFY_TimedUpdate($) {
 sub SOMFY_UpdateState($$$$$) {
 	my ($hash, $newState, $move, $updateState, $doTrigger) = @_;
 
-#	my $timestamp = TimeNow();
+  my $addtlPosReading = AttrVal($hash->{NAME},'additionalPosReading',undef);
+  $addtlPosReading = undef if ( ( $addtlPosReading eq "" )  );
+  $addtlPosReading = undef if ( ( $addtlPosReading eq "state" ) or ( $addtlPosReading eq "position" ) or ( $addtlPosReading eq "exact" ) );
 
 	readingsBeginUpdate($hash);
 
-#	$hash->{READINGS}{state}{TIME} = $timestamp;
-#	$hash->{READINGS}{position}{TIME} = $timestamp;
 	if(exists($positions{$newState})) {
 		readingsBulkUpdate($hash,"state",$newState);
 		$hash->{STATE} = $newState;
 
-#  	$hash->{READINGS}{state}{VAL}  = $newState;
-#		$hash->{CHANGED}[0]            = $newState;
-
 		readingsBulkUpdate($hash,"position",$positions{$newState});
-#		$hash->{READINGS}{position}{VAL}  = $positions{$newState};
 		$hash->{position} = $positions{$newState};
+    
+    readingsBulkUpdate($hash,$addtlPosReading,$positions{$newState}) if ( defined($addtlPosReading) );
 
-	} else {
+  } else {
 		my $rounded = SOMFY_Runden( $newState );
 		my $stateTrans = SOMFY_Translate( $rounded );
 		readingsBulkUpdate($hash,"state",$stateTrans);
 		$hash->{STATE} = $stateTrans;
 
-#		$hash->{READINGS}{state}{VAL}  = $stateTrans;
-#		$hash->{CHANGED}[0]            = $stateTrans;
-
 		readingsBulkUpdate($hash,"position",$rounded);
-#		$hash->{READINGS}{position}{VAL}  = $rounded;
 		$hash->{position} = $rounded;
-	}
+
+    readingsBulkUpdate($hash,$addtlPosReading,$rounded) if ( defined($addtlPosReading) );
+      
+
+  }
 
 		readingsBulkUpdate($hash,"exact",$newState);
-#	$hash->{READINGS}{exact}{TIME} = $timestamp;
-#	$hash->{READINGS}{exact}{VAL}  = $newState;
 	$hash->{exact} = $newState;
 
 	if ( defined( $updateState ) ) {
@@ -1281,6 +1279,15 @@ sub SOMFY_CalcCurrentPos($$$$) {
         <br>
         Example: <code>attr shutter setList open close pos:textField</code>
 		</li><br>
+
+    <a name="additionalPosReading"></a>
+    <li>additionalPosReading<br>
+        Position of the shutter will be stored in the reading <code>pos</code> as numeric value. 
+        Additionally this attribute might specify a name for an additional reading to be updated with the same value than the pos.
+		</li><br>
+
+
+
 
     <a name="eventMap"></a>
     <li>eventMap<br>
