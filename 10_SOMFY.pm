@@ -629,7 +629,7 @@ sub SOMFY_InternalSet($@) {
 		my @cList;
 
     # overwrite %sets with setList
-    my $atts = AttrVal($name,'setList',undef);
+    my $atts = AttrVal($name,'setList',"");
     my %setlist = split("[: ][ ]*", $atts);
 
 		foreach my $k (sort keys %sets) {
@@ -1015,8 +1015,9 @@ sub SOMFY_UpdateState($$$$$) {
 	my ($hash, $newState, $move, $updateState, $doTrigger) = @_;
 
   my $addtlPosReading = AttrVal($hash->{NAME},'additionalPosReading',undef);
-  $addtlPosReading = undef if ( ( $addtlPosReading eq "" )  );
-  $addtlPosReading = undef if ( ( $addtlPosReading eq "state" ) or ( $addtlPosReading eq "position" ) or ( $addtlPosReading eq "exact" ) );
+  if ( defined($addtlPosReading )) {
+    $addtlPosReading = undef if ( ( $addtlPosReading eq "" ) or ( $addtlPosReading eq "state" ) or ( $addtlPosReading eq "position" ) or ( $addtlPosReading eq "exact" ) );
+  }
 
 	readingsBeginUpdate($hash);
 
