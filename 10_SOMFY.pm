@@ -766,8 +766,9 @@ sub SOMFY_InternalSet($@) {
 				# 	if pos == 200 - no state pos change / no timer
 			} elsif ( $posRounded >= 100 ) {
 				# 	elsif pos >= 100 - set timer for 100-to-closed  --> update timer(newState 200)
-				my $remTime = ( $t1downclose - $t1down100 ) * ( ($pos-100) / 100 );
+				my $remTime = ( $t1downclose - $t1down100 ) * ( (200-$pos) / 100 );
 				$updatetime = $remTime;
+
 				$updateState = 200;
 			} elsif ( $posRounded < 100 ) {
 				#		elseif pos < 100 - set timer for remaining time to 100+time-to-close  --> update timer( newState 200)
