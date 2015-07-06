@@ -38,6 +38,10 @@
 #  2015-07-03 additionalPosReading <name> for allowing to specify an additional reading to contain position for shutter
 #  2015-07-03 Cleanup of reading update routine
 #
+#  2015-07-06 viegener - Timing improvement for position calculation / timestamp used before extensive calculations
+#  2015-07-06 viegener - send stop command only when real movement needs to be stopped (to avoid conflict with my-pos for stopped shutters)
+#
+#
 ######################################################
 #
 ### Known Issue - if timer is running and last command equals new command (only for open / close) - considered minor/but still relevant
@@ -743,7 +747,7 @@ sub SOMFY_InternalSet($@) {
 			$newState = 'moving';
 			$drivetime = $arg1;
 			if ( $drivetime == 0 ) {
-				$move = 'stop';
+				$move = 'stop';  
 			} else {
 				$updateState = 'moving';
 			}
@@ -815,7 +819,8 @@ sub SOMFY_InternalSet($@) {
 				my $remTime = ( $t1upopen - $t1up100 ) * ( ( $pos - $arg1) / 100 );
 				$drivetime = $remTime;
 				if ( $drivetime == 0 ) {
-					$move = 'stop';
+					# $move = 'stop';    # avoid sending stop to move to my-pos 
+          $move = 'none';  
 				} else {
 					$updateState = $arg1;
 				}
@@ -845,7 +850,7 @@ sub SOMFY_InternalSet($@) {
 			$move = 'off';
 			$drivetime = $arg1;
 			if ( $drivetime == 0 ) {
-				$move = 'stop';
+				$move = 'stop';   
 			} else {
 				$updateState = 	SOMFY_CalcCurrentPos( $hash, $move, $pos, $arg1 );
 			}
@@ -887,6 +892,8 @@ sub SOMFY_InternalSet($@) {
 		if(exists($sendCommands{$move})) {
 			$args[0] = $sendCommands{$move};
 			SOMFY_SendCommand($hash,@args);
+		} elsif ( $move eq 'none' ) {
+      # do nothing if commmand / move is set to none
 		} else {
 			Log3($name,1,"SOMFY_set: Error - unknown mvoe for sendCommands: $move");
 		}
