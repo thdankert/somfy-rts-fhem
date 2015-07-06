@@ -974,13 +974,15 @@ sub SOMFY_TimedUpdate($) {
 	Log3($hash->{NAME},5,"SOMFY_TimedUpdate : pos so far : $pos");
 	
 	my $dt = SOMFY_UpdateStartTime($hash);
+  my $nowt = gettimeofday();
+  
 	$pos = SOMFY_CalcCurrentPos( $hash, $hash->{move}, $pos, $dt );
 #	my $posRounded = SOMFY_RoundInternal( $pos );
 	
 	Log3($hash->{NAME},5,"SOMFY_TimedUpdate : delta time : $dt   new rounde pos (rounded): $pos ");
 	
 	$hash->{runningtime} = $hash->{runningtime} - $dt;
-	if ( $hash->{runningtime} <= 0) {
+	if ( $hash->{runningtime} <= 0.1) {
 		if ( defined( $hash->{runningcmd} ) ) {
 			SOMFY_SendCommand($hash, $hash->{runningcmd});
 		}
@@ -1000,7 +1002,9 @@ sub SOMFY_TimedUpdate($) {
 		} else {
 			Log3($hash->{NAME},4,"SOMFY_TimedUpdate: $hash->{NAME} -> update state in $hash->{runningtime} sec");
 		}
-		InternalTimer(gettimeofday()+$utime,"SOMFY_TimedUpdate",$hash,0);
+    my $nstt = max($nowt+$utime-0.01, gettimeofday()+.1 );
+    Log3($hash->{NAME},5,"SOMFY_TimedUpdate: $hash->{NAME} -> next time to stop: $nstt");
+		InternalTimer($nstt,"SOMFY_TimedUpdate",$hash,0);
 	}
 	
 	Log3($hash->{NAME},5,"SOMFY_TimedUpdate DONE");
