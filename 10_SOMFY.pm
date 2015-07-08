@@ -40,6 +40,8 @@
 #
 #  2015-07-06 viegener - Timing improvement for position calculation / timestamp used before extensive calculations
 #  2015-07-06 viegener - send stop command only when real movement needs to be stopped (to avoid conflict with my-pos for stopped shutters)
+#  2015-07-09 viegener - FIX: typo in set go-my (was incorrectly spelled: go_my) 
+#  2015-07-09 viegener - FIX: log and set command helper corrections 
 #
 #
 ######################################################
@@ -71,11 +73,11 @@ my %codes = (
 );
 
 my %sets = (
-	"off" => "",
-	"on" => "",
-	"stop" => "",
-	"go-my" => "",
-	"prog" => "",
+	"off" => "noArg",
+	"on" => "noArg",
+	"stop" => "noArg",
+	"go-my" => "noArg",
+	"prog" => "noArg",
 	"on-for-timer" => "textField",
 	"off-for-timer" => "textField",
 	"z_custom" => "textField",
@@ -660,7 +662,7 @@ sub SOMFY_InternalSet($@) {
 
 	# read timing variables
   my ($t1down100, $t1downclose, $t1upopen, $t1up100) = SOMFY_getTimingValues($hash);
-	Log3($name,5,"SOMFY_set: $name -> timings ->  td1:$t1down100: tdc :$t1downclose:  tuo :$t1upopen:  tu1 :$t1up100: ");
+	#Log3($name,5,"SOMFY_set: $name -> timings ->  td1:$t1down100: tdc :$t1downclose:  tuo :$t1upopen:  tu1 :$t1up100: ");
 
 	my $model =  AttrVal($name,'model',$models{somfyblinds});
 	
@@ -752,7 +754,7 @@ sub SOMFY_InternalSet($@) {
 				$updateState = 'moving';
 			}
 
-		} elsif($cmd =~m/stop|go_my/) { 
+		} elsif($cmd =~m/stop|go-my/) { 
 			$move = 'stop';
 			$newState = $state
 
@@ -841,7 +843,7 @@ sub SOMFY_InternalSet($@) {
 			###				return "SOMFY_set: Pos not currently known please open or close first";
 			}
 
-		} elsif($cmd =~m/stop|go_my/) { 
+		} elsif($cmd =~m/stop|go-my/) { 
 			#		update pos according to current detail pos
 			$move = 'stop';
 			
@@ -895,7 +897,7 @@ sub SOMFY_InternalSet($@) {
 		} elsif ( $move eq 'none' ) {
       # do nothing if commmand / move is set to none
 		} else {
-			Log3($name,1,"SOMFY_set: Error - unknown mvoe for sendCommands: $move");
+			Log3($name,1,"SOMFY_set: Error - unknown move for sendCommands: $move");
 		}
 	}	
 
