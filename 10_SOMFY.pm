@@ -526,7 +526,7 @@ sub SOMFY_Parse($$) {
 		return @list;
 
 	} else {
-		Log3 $hash, 3, "SOMFY Unknown device $address, please define it";
+		Log3 $hash, 1, "SOMFY Unknown device $address, please define it";
 		return "UNDEFINED SOMFY_$address SOMFY $address";
 	}
 }
@@ -879,7 +879,7 @@ sub SOMFY_InternalSet($@) {
 	}
 
 	### update hash / readings
-	Log3($name,3,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
+	Log3($name,4,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
 	if ( defined($updateState)) {
 		Log3($name,5,"SOMFY_set: handled for drive/udpate:  updateState :$updateState:  drivet :$drivetime: updatet :$updatetime: ");
 	} else {
