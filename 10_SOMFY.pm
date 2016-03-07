@@ -1,5 +1,5 @@
 ######################################################
-# $Id: 10_SOMFY.pm 7988 2015-02-14 22:04:45Z thomyd $
+# $Id: 10_SOMFY.pm 9710 2015-10-28 17:56:43Z tobiasfaust $
 #
 # SOMFY RTS / Simu Hz protocol module for FHEM
 # (c) Thomas Dankert <post@thomyd.de>
@@ -525,7 +525,7 @@ sub SOMFY_Parse($$) {
 		return @list;
 
 	} else {
-		Log3 $hash, 3, "SOMFY Unknown device $address, please define it";
+		Log3 $hash, 1, "SOMFY Unknown device $address, please define it";
 		return "UNDEFINED SOMFY_$address SOMFY $address";
 	}
 }
@@ -879,7 +879,7 @@ sub SOMFY_InternalSet($@) {
 	}
 
 	### update hash / readings
-	Log3($name,3,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
+	Log3($name,4,"SOMFY_set: handled command $cmd --> move :$move:  newState :$newState: ");
 	if ( defined($updateState)) {
 		Log3($name,5,"SOMFY_set: handled for drive/udpate:  updateState :$updateState:  drivet :$drivetime: updatet :$updatetime: ");
 	} else {
