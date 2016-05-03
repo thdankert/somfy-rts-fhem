@@ -1,5 +1,5 @@
 ######################################################
-# $Id: 10_SOMFY.pm 7988 2015-02-14 22:04:45Z thomyd $
+# $Id: 10_SOMFY.pm 11028 2016-03-08 09:11:38Z thomyd $
 #
 # SOMFY RTS / Simu Hz protocol module for FHEM
 # (c) Thomas Dankert <post@thomyd.de>
@@ -194,7 +194,8 @@ sub SOMFY_Initialize($) {
 	  . " ignore:0,1"
 	  . " dummy:1,0"
 	  . " model:somfyblinds,somfyshutter"
-	  . " loglevel:0,1,2,3,4,5,6";
+	  . " loglevel:0,1,2,3,4,5,6"
+	  . " $readingFnAttributes";
 
 }
 
