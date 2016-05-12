@@ -307,6 +307,9 @@ sub SOMFY_SendCommand($@)
 	my $name = $hash->{NAME};
 	my $numberOfArgs  = int(@args);
 
+	return "IODev unsupported" if (!defined($hash->{IODev}) || 
+		(my $ioType = $hash->{IODev}->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
+
 	Log3($name,4,"SOMFY_sendCommand: $name -> cmd :$cmd: ");
 
   # custom control needs 2 digit hex code
@@ -322,10 +325,8 @@ sub SOMFY_SendCommand($@)
 		  . join( " ", sort keys %somfy_c2b );
 	}
 
-	my $io = $hash->{IODev};
-
 	# CUL specifics
-	if ($io->{TYPE} ne "SIGNALduino") {
+	if ($ioType eq "CUL") {
 		## Do we need to change RFMode to SlowRF?
 		if (   defined( $attr{ $name } )
 			&& defined( $attr{ $name }{"switch_rfmode"} ) )
@@ -360,8 +361,6 @@ sub SOMFY_SendCommand($@)
 		}
 	}
 	
-	my $value = $name ." ". join(" ", @args);
-
 	# convert old attribute values to READINGs
 	my $timestamp = TimeNow();
 	if(defined($attr{$name}{"enc-key"} && defined($attr{$name}{"rolling-code"}))) {
@@ -392,15 +391,13 @@ sub SOMFY_SendCommand($@)
 	  . uc( $hash->{ADDRESS} );
 
 	## Log that we are going to switch Somfy
-	Log GetLogLevel( $name, 4 ), "SOMFY set $value: $message";
-	( undef, $value ) = split( " ", $value, 2 );    # Not interested in the name...
+	Log GetLogLevel( $name, 4 ), "SOMFY set $name " . join(" ", @args) . ": $message";
 
 	## Send Message to IODev using IOWrite
-	if ($io->{TYPE} ne "SIGNALduino") {
-		# das IODev ist kein SIGNALduino
+	if ($ioType eq "CUL") {
 		Log3($name,5,"SOMFY_sendCommand: $name -> message :$message: ");
 		IOWrite( $hash, "Y", $message );
-	} else {  	# SIGNALduino
+	} elsif ($ioType eq "SIGNALduino") {
 		my $SignalRepeats = AttrVal($name,'repetition', '6');
 		# swap address, remove leading s
 		$decData = substr($message, 1, 8) . substr($message, 13, 2) . substr($message, 11, 2) . substr($message, 9, 2);
@@ -408,7 +405,7 @@ sub SOMFY_SendCommand($@)
 		my $check = SOMFY_RTS_Check($name, $decData);
 		my $encData = SOMFY_RTS_Crytp("e", $name, substr($decData, 0, 3) . $check . substr($decData, 4);
 		$message = 'P43#' . $encData . '#R' . $SignalRepeats;
-		Log3 $hash, 4, "$io->{NAME} SOMFY_sendCommand: $name -> message :$message: ";
+		Log3 $hash, 4, "$hash->{IODev}->{NAME} SOMFY_sendCommand: $name -> message :$message: ";
 		IOWrite($hash, 'sendMsg', $message);
 	}
 
@@ -424,7 +421,7 @@ sub SOMFY_SendCommand($@)
 	setReadingsVal($hash, "rolling_code", $new_rolling_code, $timestamp);
 
 	# CUL specifics
-	if ($io->{TYPE} ne "SIGNALduino") {
+	if ($ioType eq "CUL") {
 		## Do we need to change symbol length back?
 		if (   defined( $attr{ $name } )
 			&& defined( $attr{ $name }{"symbol-length"} ) )
