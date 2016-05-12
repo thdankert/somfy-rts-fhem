@@ -502,16 +502,20 @@ sub SOMFY_Parse($$) {
 	my ($hash, $msg) = @_;
 	my $name = $hash->{NAME};
 
+	return "IODev unsupported" if (!defined($hash->{IODev}) || 
+		(my $ioType = $hash->{IODev}->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
+
 	# preprocessing if IODev is SIGNALduino	
-	if ($io->{TYPE} eq "SIGNALduino") {
-		return "Somfy RTS message format error!") if ($msg !~ m/A[0-9A-F]{13}/);
+	if ($ioType eq "SIGNALduino") {
+		my $encData = substr($msg, 2);
+		return "Somfy RTS message format error!") if ($encData !~ m/A[0-9A-F]{13}/);
 	
-		$decData = SOMFY_RTS_Crypt("d", $name, $msg);
+		$decData = SOMFY_RTS_Crypt("d", $name, $encData);
 		my $check = SOMFY_RTS_Check($name, $decData);
 		
 		return "Somfy RTS checksum error!" if ($check ne substr($decData, 3, 1));
 		
-		$msg = $decData;
+		$msg = substr($msg, 0, 2) . $decData;
 	}
 	
 	# Msg format:
