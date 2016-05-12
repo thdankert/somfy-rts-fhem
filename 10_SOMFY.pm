@@ -148,6 +148,7 @@ my %translations = (
 sub SOMFY_CalcCurrentPos($$$$);
 
 
+
 ######################################################
 ######################################################
 
@@ -307,8 +308,10 @@ sub SOMFY_SendCommand($@)
 	my $name = $hash->{NAME};
 	my $numberOfArgs  = int(@args);
 
+	my $io = $hash->{IODev};
+
 	return "IODev unsupported" if (!defined($hash->{IODev}) || 
-		(my $ioType = $hash->{IODev}->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
+		(my $ioType = $io->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
 
 	Log3($name,4,"SOMFY_sendCommand: $name -> cmd :$cmd: ");
 
@@ -400,12 +403,12 @@ sub SOMFY_SendCommand($@)
 	} elsif ($ioType eq "SIGNALduino") {
 		my $SignalRepeats = AttrVal($name,'repetition', '6');
 		# swap address, remove leading s
-		$decData = substr($message, 1, 8) . substr($message, 13, 2) . substr($message, 11, 2) . substr($message, 9, 2);
+		my $decData = substr($message, 1, 8) . substr($message, 13, 2) . substr($message, 11, 2) . substr($message, 9, 2);
 		
 		my $check = SOMFY_RTS_Check($name, $decData);
-		my $encData = SOMFY_RTS_Crytp("e", $name, substr($decData, 0, 3) . $check . substr($decData, 4));
+		my $encData = SOMFY_RTS_Crypt("e", $name, substr($decData, 0, 3) . $check . substr($decData, 4));
 		$message = 'P43#' . $encData . '#R' . $SignalRepeats;
-		Log3 $hash, 4, "$hash->{IODev}->{NAME} SOMFY_sendCommand: $name -> message :$message: ";
+		#Log3 $hash, 4, "$hash->{IODev}->{NAME} SOMFY_sendCommand: $name -> message :$message: ";
 		IOWrite($hash, 'sendMsg', $message);
 	}
 
@@ -502,19 +505,19 @@ sub SOMFY_Parse($$) {
 	my ($hash, $msg) = @_;
 	my $name = $hash->{NAME};
 
-	return "IODev unsupported" if (!defined($hash->{IODev}) || 
-		(my $ioType = $hash->{IODev}->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
+	return "IODev unsupported" if ((my $ioType = $hash->{TYPE}) !~ m/^(CUL|SIGNALduino)$/);
 
 	# preprocessing if IODev is SIGNALduino	
 	if ($ioType eq "SIGNALduino") {
 		my $encData = substr($msg, 2);
-		return "Somfy RTS message format error!") if ($encData !~ m/A[0-9A-F]{13}/);
+		return "Somfy RTS message format error!" if ($encData !~ m/A[0-9A-F]{13}/);
 	
 		my $decData = SOMFY_RTS_Crypt("d", $name, $encData);
 		my $check = SOMFY_RTS_Check($name, $decData);
 		
 		return "Somfy RTS checksum error!" if ($check ne substr($decData, 3, 1));
 		
+		Log3 $name, 4, "$name: Somfy RTS preprocessing check: $check enc: $encData dec: $decData";
 		$msg = substr($msg, 0, 2) . $decData;
 	}
 	
