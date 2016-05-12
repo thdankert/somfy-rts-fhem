@@ -403,7 +403,7 @@ sub SOMFY_SendCommand($@)
 		$decData = substr($message, 1, 8) . substr($message, 13, 2) . substr($message, 11, 2) . substr($message, 9, 2);
 		
 		my $check = SOMFY_RTS_Check($name, $decData);
-		my $encData = SOMFY_RTS_Crytp("e", $name, substr($decData, 0, 3) . $check . substr($decData, 4);
+		my $encData = SOMFY_RTS_Crytp("e", $name, substr($decData, 0, 3) . $check . substr($decData, 4));
 		$message = 'P43#' . $encData . '#R' . $SignalRepeats;
 		Log3 $hash, 4, "$hash->{IODev}->{NAME} SOMFY_sendCommand: $name -> message :$message: ";
 		IOWrite($hash, 'sendMsg', $message);
@@ -510,7 +510,7 @@ sub SOMFY_Parse($$) {
 		my $encData = substr($msg, 2);
 		return "Somfy RTS message format error!") if ($encData !~ m/A[0-9A-F]{13}/);
 	
-		$decData = SOMFY_RTS_Crypt("d", $name, $encData);
+		my $decData = SOMFY_RTS_Crypt("d", $name, $encData);
 		my $check = SOMFY_RTS_Check($name, $decData);
 		
 		return "Somfy RTS checksum error!" if ($check ne substr($decData, 3, 1));
