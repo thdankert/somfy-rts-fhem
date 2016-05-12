@@ -324,6 +324,7 @@ sub SOMFY_SendCommand($@)
 
 	my $io = $hash->{IODev};
 
+	# CUL specifics
 	if ($io->{TYPE} ne "SIGNALduino") {
 		## Do we need to change RFMode to SlowRF?
 		if (   defined( $attr{ $name } )
@@ -422,38 +423,41 @@ sub SOMFY_SendCommand($@)
 	setReadingsVal($hash, "enc_key", $new_enc_key, $timestamp);
 	setReadingsVal($hash, "rolling_code", $new_rolling_code, $timestamp);
 
-	## Do we need to change symbol length back?
-	if (   defined( $attr{ $name } )
-		&& defined( $attr{ $name }{"symbol-length"} ) )
-	{
-		$message = "t" . $somfy_defsymbolwidth;
-		IOWrite( $hash, "Y", $message );
-		Log GetLogLevel( $name, 4 ),
-		  "SOMFY set symbol-length back: $message for $io->{NAME}";
-	}
-
-	## Do we need to change repetition back?
-	if (   defined( $attr{ $name } )
-		&& defined( $attr{ $name }{"repetition"} ) )
-	{
-		$message = "r" . $somfy_defrepetition;
-		IOWrite( $hash, "Y", $message );
-		Log GetLogLevel( $name, 4 ),
-		  "SOMFY set repetition back: $message for $io->{NAME}";
-	}
-
-	## Do we need to change RFMode back to HomeMatic??
-	if (   defined( $attr{ $name } )
-		&& defined( $attr{ $name }{"switch_rfmode"} ) )
-	{
-		if ( $attr{ $name }{"switch_rfmode"} eq "1" )
-		{    # do we need to change RFMode of IODev?
-			my $ret =
-			  CallFn( $io->{NAME}, "AttrFn", "set",
-				( $io->{NAME}, "rfmode", "HomeMatic" ) );
+	# CUL specifics
+	if ($io->{TYPE} ne "SIGNALduino") {
+		## Do we need to change symbol length back?
+		if (   defined( $attr{ $name } )
+			&& defined( $attr{ $name }{"symbol-length"} ) )
+		{
+			$message = "t" . $somfy_defsymbolwidth;
+			IOWrite( $hash, "Y", $message );
+			Log GetLogLevel( $name, 4 ),
+			  "SOMFY set symbol-length back: $message for $io->{NAME}";
+		}
+	
+		## Do we need to change repetition back?
+		if (   defined( $attr{ $name } )
+			&& defined( $attr{ $name }{"repetition"} ) )
+		{
+			$message = "r" . $somfy_defrepetition;
+			IOWrite( $hash, "Y", $message );
+			Log GetLogLevel( $name, 4 ),
+			  "SOMFY set repetition back: $message for $io->{NAME}";
+		}
+	
+		## Do we need to change RFMode back to HomeMatic??
+		if (   defined( $attr{ $name } )
+			&& defined( $attr{ $name }{"switch_rfmode"} ) )
+		{
+			if ( $attr{ $name }{"switch_rfmode"} eq "1" )
+			{    # do we need to change RFMode of IODev?
+				my $ret =
+				  CallFn( $io->{NAME}, "AttrFn", "set",
+					( $io->{NAME}, "rfmode", "HomeMatic" ) );
+			}
 		}
 	}
-
+	
 	##########################
 	# Look for all devices with the same address, and set state, enc-key, rolling-code and timestamp
 	my $code = "$hash->{ADDRESS}";
@@ -466,6 +470,7 @@ sub SOMFY_SendCommand($@)
 		$lh->{READINGS}{rolling_code}{TIME} = $tn;
 		$lh->{READINGS}{rolling_code}{VAL}  = $new_rolling_code;
 	}
+	
 	return $ret;
 } # end sub SOMFY_SendCommand
 
